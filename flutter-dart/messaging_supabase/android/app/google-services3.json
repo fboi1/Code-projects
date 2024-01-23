@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "4096318877",
+    "project_id": "messaging-370d7",
+    "storage_bucket": "messaging-370d7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:4096318877:android:87c6f05f1beaa080f02374",
+        "android_client_info": {
+          "package_name": "com.example.messaging"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "4096318877-n516jmubt9fdsi77n9mhuen3bb8a8pv7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4mnL12rQ_eKXhmiiGt7ifTmqwVPCSK94"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "4096318877-n516jmubt9fdsi77n9mhuen3bb8a8pv7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:4096318877:android:e05dfab3bd757568f02374",
+        "android_client_info": {
+          "package_name": "com.example.messaging_supabase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "4096318877-n516jmubt9fdsi77n9mhuen3bb8a8pv7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4mnL12rQ_eKXhmiiGt7ifTmqwVPCSK94"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "4096318877-n516jmubt9fdsi77n9mhuen3bb8a8pv7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
