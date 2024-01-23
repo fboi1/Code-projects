@@ -1,0 +1,334 @@
+---
+title: "sost20131"
+output:
+  pdf_document: default
+  html_document: default
+date: '2023-01-08'
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{=latex}
+\topskip0pt
+\vspace*{\fill}
+\begin{centering}
+\Large
+{\bf SOST20131/SOST30031} \\
+{\bf Answering Social Research Questions with Statistical Models} \\
+\vspace{6cm}
+\Large
+{\bf Essay Assignment 2} \\
+\vspace{2 cm}
+\Large
+{\ Student ID: 10916038} \\
+\end{centering}
+\vspace*{\fill}
+```
+```{=latex}
+\newpage
+\tableofcontents
+\newpage
+```
+
+
+# Assignment 2
+
+## Question1
+
+### Getting to know the data - Exploratory data analysis
+
+1.
+
+First a general understating of the variables should be established so that it is intuitive to interpret whether or not the fitted model will make sense or not.
+
+The response variable, FDI, concerns the level of investment into a particular country from foreign sources. A number of explanatory variables are employed that seek to explain the movement in FDI levels. 
+
+Intuitively, ROC (return on capital invested) should correlate positively with FDI as it implies that foreign investors will be able to achieve their goal of increasing their invested capital.
+
+GDP per capita corresponds to individuals owning more wealth in said country. Investors may value this as an opportunity since investing in a country with a wealthier population can prove to be prosperous for their business. Thus a positive relationship between FDI and GDP per capita may be inferred.
+
+For the same reason, a positive coefficient can be expected from variables Gr_rate, Infra and Trade as high values correspond to the country having a good track record for being able to sustain itself and encourage growth with good infrastructure and progressive trade legislation. 
+
+Finally, a negative coefficient should be expected from the variable Stable as a high number of government changes implies an unstable regime which can be unattractive for foreign investors.
+
+
+Through R, the relationship between the variables can be visualized.
+
+```{r, results='hide', warning=FALSE, message=FALSE}
+mydata <- read.csv("https://tanjakec.github.io/SOST20131_30031/data/FDI.csv")
+mydata$Infra <- as.factor(mydata$Infra)
+mydata$Trade <- as.factor(mydata$Trade)
+GGally::ggpairs(mydata)
+
+```
+
+It should be noted that the categorical variables have been converted into factors. This means that the factors will be stored as vectors of the integer values that they previously represented. A dummy variable is created for each level of the factor, the number of which is determined by k-1 with k being the number of categories for said variable, this is so that one category can be used as the reference level. 
+
+From the plot, it is evident that FDI is strongly correlated with GDP_Cap and ROC. Furthermore, strong relationships are present between other predictors such as ROC and GDP_Cap and ROC and Gr_rate. Furthermore, categorical variable Infra seems to show correlation between GDP_Cap as the medians of the distributions are quite different across the levels of Infra against GDP_Cap, this is also true for the spread as the interquartile range is not very similar. ROC also seems to be correlated with Infra for the same reason. This may prove to be problematic later as it implies multicollinearity.
+
+### Modelling
+
+With an overview of the variables that are being dealt with, the model can now start to be put together. A stepwise approach will be taken whereby a saturated model will first be created and variables will be removed until the ideal model is achieved. 
+```{r}
+full_model <- lm(FDI ~., data = mydata) # includes all variables
+summary(full_model)
+```
+
+From the following results, multicollinearity can be identified. There are several reasons for this. The ROC coeffiecient is much lower than expected and is not significant. This may be due to ROC being correlated with GDP_Cap, Gr_rate and Infra. 
+
+```{r}
+car::vif(full_model)
+```
+Also, with a vif value (Variance Inflation Factor) above 5 it is suggested that ROC is correlated with other explanatory variables in the model. Thus ROC will be removed from the model.
+```{r}
+model1 <- lm(FDI ~. - ROC, data = mydata) 
+summary(model1)
+
+car::vif(model1)
+```
+
+The R squared adjusted has changed slightly from 0.7142 to 0.7295 and the R squared value hasn't changed at all. There are no longer any vif values above 5. This proves that the explanatory power of ROC was able to be represented by other variables in the model, hence collinearity was certainly present. 
+
+```{r}
+library(ggplot2)
+
+ggplot(data = mydata, aes(x = Infra, y = FDI)) + 
+  geom_boxplot() +
+  ggtitle("FDI by Infra")
+```
+It is hard to gauge from the box plot whether FDI and Infra are truly correlated. A t-test can be used to confirm whether these continuous and categorical variables are related.
+
+$h_{0}:$ The means are equal
+
+$h_{A}:$ The means are different
+
+```{r}
+t.test(mydata$FDI ~ mydata$Infra, var.equal = TRUE)
+```
+With a p-value less than 0.05 we can conclude that they have significantly different means and are related.
+
+However Infra shows up as not being significant in this regression model. Furthermore, Infras relationship from the previous box plot inspection between GDP_Cap suggests it may also be contributing to multicollinearity as it seems to be correlated with GDP__Cap. 
+
+A t-test can be conducted to verify whether or not it should be removed from the model.
+
+$h_{0}: Infra =0$, (Infra is unimportant)
+
+$h_{A}: Infra > 0$ (Infra has a positive influence)
+
+```{r}
+qt(0.95,53) #53 df
+```
+Infra t-value = -0.118
+
+$-0.118 < 1.67$
+
+$t_{calc} < t{crit}$
+
+Therefore we can reject the alternate hypothesis.
+
+From all of the collective evidence it can be safely concluded that Infra is to be removed from the model.
+
+```{r}
+model2 <- lm(FDI ~. - ROC - Infra, data = mydata) 
+summary(model2)
+```
+
+The R squared adjusted increases slightly, while it isn't a dramatic increase the reduction of a variable is a success in itself following the criteria of parsimony which prefers a model with fewer variables to one with many variables.
+
+Finally, it is observed that Gr_rate has a negative coefficient, this goes against the inital analysis in which Gr_rate was expected to show a positive relationship with FDI. A t-test can also be conducted to test whether we should include this predictor by checking if the coefficient should be positive.
+
+$h_{0}: Gr_rate =0$, (Infra is unimportant)
+
+$h_{A}: Gr_rate > 0$ (Infra has a positive influence)
+
+```{r}
+qt(0.95, 54) #54 df
+```
+
+$-0.196 < 1.67$
+
+$t_{calc} < t{crit}$
+Thus we can reject the alternative hypothesis and conclude that Gr_rate can be removed from the model.
+
+```{r}
+model3 <- lm(FDI ~. - ROC - Infra - Gr_rate, data = mydata) 
+summary(model3)
+```
+
+The model has improved since R squared adjusted value is now larger than before and the number of variables has been reduced since the first attempt with the most saturated model. 
+
+Given that we haven't identified correlations between the remaining predictors in our data analysis and since the vif indicates that multicollinearity isn't a concern the remaining model seems to be ideal.
+```{r, echo=FALSE}
+car::vif(model3)
+```
+
+Furthermore, if a backwards elimination approach is taken with the remaining variables we can see that the AIC for the initial model is 122.17. Removing any of the variables increases AIC which reduces the models fit. Hence it can be concluded that the current model is ideal:
+```{r}
+step(model3, direction = "backward")
+```
+### Model comparison / evaluation / prediction
+Finally, to compare the two models, the AIC's of the saturated model and reduced model can be weighed up. The AIC measures how good a model is based on goodness of fit and complexity with a lower AIC being preferable to a higher value.
+```{r}
+extractAIC(model3)
+extractAIC(full_model)
+```
+The extractAIC() function was used as the computation method to calculate the AIC is the same as the one previously used in the backwards elimination function allowing for easier interpretation.
+
+The results show that the AIC of the reduced model is lower which proves that it is superior. 
+
+It can also be observed that the R squared adjusted value has risen from 0.7142 to 0.7295 which means the reduced model explains the data 1.5% better than the full model.
+
+Furthermore, from the low p-value of the model (less than 0.05), it can be concluded that there is sufficient evidence that the observed effect exists in the larger population.
+
+After arriving at the final model, it can be assumed that the model adheres to the principle of parsimony as it is a smaller model that doesn't have interactions between factors. In addition to this, the explanatory power of the model hasn't been reduced therefore it can be seen as a success.
+
+2.
+
+The equation for the reduced model is as follows:
+
+$$FDI = b_0+b_1GDP\_Cap + b_2Stable + b_3Trade2 + b_4Trade3 + e$$
+
+$$FDI = 189.43+0.91GDP\_Cap + -0.54Stable + 4.88Trade2 + 5.94Trade3$$
+
+As trade was converted into a factor at the start, it can be assumed that while holding all other variables constant, FDI increases by 4.88 when Trade is 2 rather than when it is at 1. Vice versa for Trade 3 whereby FDI increases by 5.94 when Trade is 3 rather than when it is 1.
+
+Therefore in the following situation: "The country receiving the investment has GDP per capita of 11.1 and Gr_rate per capita of 3.05; The average return on capital invested is 20.5%; There were 11 changes of government over the past 25 years and the Country has good infrastructure with some restrictions on trade."
+
+The FDI can be calculated as such: 
+
+$$FDI = 189.43+0.91(11.1) + -0.54(11)+ 4.88(1) + 5.94(0)$$ = 198.471
+
+```{r}
+res <- resid(model3)
+qqnorm(res)
+qqline(res)
+shapiro.test(res)
+```
+
+The shapiro wilk test involves a null hypothesis of normality which is able to be rejected when a p-value is less than 0.05. This is not the case here and the model can be assumed to be normally distributed, the qq plot aids in visualising this fact. Thus the model and its predictions can be assumed to be valid as the residuals are normally distributed and good fit is also implied.
+
+The results also make sense according to intuition. It is evident that Trade conditions strongly influence the FDI as foreign investors would be likely to invest in countries that favour relaxed trade legislation as it gives investors security in the fact that their relationship to their foreign investment won't be interrupted by the government. Furthermore the remaining predictor variables are also in line with the analysis conducted previously based on intuition.
+
+
+## Question 2
+### Data inspection
+1.
+
+Financial ratios can be used as tools to evaluate the performance of a company.
+```{r, results='hide', warning=FALSE, message=FALSE}
+ratios <- read.csv("https://tanjakec.github.io/SOST20131_30031/data/four_ratios.csv")
+ratios$y <- as.factor(ratios$y)
+
+GGally::ggpairs(ratios)
+```
+From the graph it seems like the distribution for x3 is positively skewed and all other variables seem to be negatively skewed with the exception of x4. This may lead to biased estimates and can negatively affect the validity of the model.
+
+The box plots on the right indicate that it can be assumed that all of the financial ratios are related to y in some way. However the relationship between y and x3 and y and x4 seems to be ambiguous from the plot. A t-test can be used to clarify this. 
+
+```{r}
+t.test(ratios$x3 ~ ratios$y, var.equal = TRUE)
+```
+The p value is less than 0.05 hence the null hypothesis (there is no significant difference between the means) can be rejected and the alternative hypothesis (there is a significant difference between the means) can be accepted.
+
+```{r}
+t.test(ratios$x4 ~ ratios$y, var.equal = TRUE)
+```
+In this case, the p value is larger than than 0.05 hence the null hypothesis (there is no significant difference between the means) can not be rejected and instead, the alternative hypothesis (there is a significant difference between the means) is rejected.
+
+Thus it is implied that x4 may not be a significantly strong predictor of y, whereas some relationship can still be assumed between y and x3.
+
+### Logistic regression
+2.
+
+To assess the impact that the rations have on a companies' future (to stay solvent or go bankrupt) logistic regression can be used. A model will be fit and the equation should look as such:
+$$y = \frac{1}{ (1 + e^{(- (b0 + b1x1 + b2x2 + b3x3 + b4x4))})}$$
+```{r}
+set.seed(123)
+split_idx = sample(nrow(ratios), 88) #80:20 split
+ratios_train = ratios[split_idx, ]
+ratios_test = ratios[-split_idx, ]
+```
+The model will be trained on 80% of the data and will be tested on the remaining 20% of data which is unseen, this will prevent the predictions from following a biased model.
+
+```{r}
+log_model <- glm(formula = y~.,data = ratios_train, family = binomial(logit))
+summary(log_model)
+```
+The most saturated model is fit including all of the variables. This provides a base model to which all newer models can be compared to.
+
+x4 seems to be an insignificant predictor in the model. A chi squared test can also be conducted to confirm which variables are not to be included in the model.
+```{r}
+anova(log_model, test="Chisq")
+```
+$$h_0:\beta _i = 0, $$
+$$h_1:\beta _i \neq  0$$
+As x4 has a p-value that is above the threshold of 0.05 the null hypothesis isn't rejected. Thus it is safe to assume that x4 should be removed. 
+
+This can also be assumed to be an intuitive removal as a company may have high debt from investing in itslef but may have a high cashflow from the revenue of its projects. The company may have a low cash flow/debt ratio but it still may not go bankrupt as it has a steady income to pay off such debts. Furthermore, a company may have other assets to pay off its debts rather than cash flow therefore the ratio depicted by x4 seems to have weak explanatory power.
+
+```{r}
+log_model1 <- glm(formula = y~. - x4,data = ratios_train, family = binomial(logit))
+summary(log_model1)
+```
+Following the removal of x4, the AIC value has increased which implies a drop in quality for the new model. However an AIC increase from 51.577 to 51.637 can be considered insignificant and the latter model can be preferred as it has fewer variables. This is in line with parsimony. 
+
+Furthermore it can be tested whether the predictor variables have explanatory power greater than 0 with the G statistic.
+$$h_0:\beta _i = 0, $$
+
+$$h_1:$$at least one variable is significantly different to 0
+
+```{r}
+#check if model sig in predicting y
+G_calc <- log_model1$null.deviance - log_model1$deviance
+Gdf <- log_model1$df.null - log_model1$df.residual
+pscl::pR2(log_model1)
+qchisq(.95, df = Gdf) 
+1 - pchisq(G_calc, Gdf)
+```
+Since 80.3715635 > 9.487729 the null hypothesis can be rejected. 
+
+### Accuracy of the model
+3.
+
+To judge the accuracy of the model a confusion matrix can be constructed to represent true positive, false positive, false negative and true negative predictions. It is created based on the test dataset that was partitioned earlier.
+```{r}
+#confusion matrix
+library(dplyr)
+response_pr <- round(predict(log_model1,  ratios_test, type = "response"), 2)
+
+confusion_matrix <- table(ratios_test$y, round(response_pr))
+confusion_matrix
+
+```
+From this, the accuracy can be calculated by taking the number of correct predictions in the diagonal, and dividing by the total predictions made.
+```{r}
+accuracy <- function(x){
+  sum(diag(x) / (sum(rowSums(x)))) * 100
+}
+
+accuracy(confusion_matrix)
+```
+The accuracy is 96%.
+
+The following are the odds ratios for each coefficient in the model:
+
+```{r}
+exp(coef(log_model1))
+```
+It should be noted that the coefficients for x1 and x2 are substantially above 1. This may suggest that the model is overfitting as the vif doesn't suggest any multicollinearity:
+```{r}
+car::vif(log_model)
+```
+Therefore more data may be required to remedy this.
+
+Furthermore, it seems that the residuals are not normally distributed. An implication of this would be to assume that the model is not a good fit.
+```{r}
+res <- resid(log_model1)
+qqnorm(res)
+qqline(res)
+shapiro.test(res)
+```
+The results from the shapiro test are significant as they are quite below 0.05 hence it can be assumed that the residuals are not normally distributed, the qq plot helps visualise this. 
+
+In the future, a dataset with a larger sample should be used to avoid these problems.
